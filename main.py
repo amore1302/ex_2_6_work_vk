@@ -3,6 +3,12 @@ from dotenv import load_dotenv
 import os
 import random
 
+def remove_local_file(name_file):
+    if os.path.isfile(name_file):
+        os.remove(name_file)
+    else:
+        print("Error: %s file not found" % name_file)
+
 
 def load_image_from_url_to_file(url_internet, full_file_name):
     response = requests.get(url_internet, verify=False)
@@ -21,11 +27,9 @@ def get_numbers_xkcd():
 
 def get_xkcd_to_file(number_xkcd):
     host_api = "https://xkcd.com/{0}/info.0.json".format(number_xkcd)
-    # print(host_api)
     response = requests.get(host_api)
     response.raise_for_status()
     info_number_xkcd = response.json()
-    # print(info_number_xkcd)
     url_xkcd = info_number_xkcd["img"]
     comment_xkcd = info_number_xkcd["alt"]
     _, file_extension = os.path.splitext(url_xkcd)
@@ -34,27 +38,37 @@ def get_xkcd_to_file(number_xkcd):
     return {"name": name_file_xkcd, "comment": comment_xkcd}
 
 
-def get_addres_for_load_pfoto():
+def get_address_for_load_photo():
     host = "https://api.vk.com/method/photos.getWallUploadServer"
     payload = {"access_token": access_token,
                "group_id": group_id,
                "v": "5.103"
                }
     response = requests.get(host, params=payload)
+    if not response.ok:
+        print("ОШИБКА Не смогли выполнить запрос get : Получите адрес для загрузки фото Все Остановили  ")
+        return None
+    if response.text.find("upload_url")  <= 0 :
+        print("ПОШИБКА олучите адрес для загрузки фото Все Остановили  не вернул правильный адрес для загрузки")
+        return None
     return response.json()["response"]["upload_url"]
 
 
-def load__pfoto_to_server_vk(https_addres_for_load_pfoto, name_file, comment_xkcd):
+def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xkcd):
     with open(name_file, 'rb') as file:
-        url = https_addres_for_load_pfoto
+        url = https_address_for_load_photo
         files = {
             'photo': file,
         }
         response = requests.post(url, files=files)
-        response.raise_for_status()
-    vk_server = response.json()["server"]
-    vk_photo = response.json()["photo"]
-    vk_hash = response.json()["hash"]
+        if not response.ok:
+            print("ОШИБКА Не смогли выгрузить фото на сервер Vk   Все Остановили  ")
+            return None
+
+    vk_answer = response.json()
+    vk_server = vk_answer["server"]
+    vk_photo  = vk_answer["photo"]
+    vk_hash   = vk_answer["hash"]
 
     host = "https://api.vk.com/method/photos.saveWallPhoto"
     payload = {"access_token": access_token,
@@ -66,9 +80,18 @@ def load__pfoto_to_server_vk(https_addres_for_load_pfoto, name_file, comment_xkc
                "v": "5.103"
                }
     response = requests.post(host, params=payload)
-    rez = response.json()
-    id_photo = response.json()["response"][0]["id"]
-    id_owner = response.json()["response"][0]["owner_id"]
+    if not response.ok:
+        print("ОШИБКА Не смогли выполнить post запрос для Загрузка фотографий на стену Vk.   Все Остановили  ")
+        return None
+
+    if response.text.find("response")  <= 0 :
+        print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили  ")
+        return None
+
+
+    vk_save_wall_photo = response.json()
+    id_photo = vk_save_wall_photo["response"][0]["id"]
+    id_owner = vk_save_wall_photo["response"][0]["owner_id"]
     id_attachments = "photo{0}_{1}".format(id_owner, id_photo)
     post_owner_id = "-{0}".format(group_id)
     host = "https://api.vk.com/method/wall.post"
@@ -80,7 +103,11 @@ def load__pfoto_to_server_vk(https_addres_for_load_pfoto, name_file, comment_xkc
                "v": "5.103"
                }
     response = requests.get(host, params=payload)
-    rez = response.json()
+    if not response.ok:
+        print("ОШИБКА Не смогли выложить пост  на стену Vk.   Все Остановили  ")
+        return None
+
+    return "Ok"
 
 
 def main():
@@ -100,21 +127,19 @@ def main():
     name_file = current_xkcd["name"]
     comment_xkcd = current_xkcd["comment"]
 
-    try:
-        https_addres_for_load_pfoto = get_addres_for_load_pfoto()
-    except requests.exceptions.HTTPError as error:
-        exit("Не смогли получить адрес сервера phttps://api.vk.com/method/photos.getWallUploadServer  :\n{0}".format(
-            error))
 
-    try:
-        load__pfoto_to_server_vk(https_addres_for_load_pfoto, name_file, comment_xkcd)
-    except requests.exceptions.HTTPError as error:
-        exit("Не смогли выгрузить Комикс в VK  :\n{0}".format(error))
+    https_address_for_load_photo = get_address_for_load_photo()
+    if https_address_for_load_photo == None:
+        remove_local_file(name_file)
+        return
 
-    if os.path.isfile(name_file):
-        os.remove(name_file)
-    else:  ## Show an error ##
-        print("Error: %s file not found" % name_file)
+    answer_load_photo = load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xkcd)
+    if answer_load_photo  == None:
+        print("Не смогли выгрузить Комикс в VK  ")
+        remove_local_file(name_file)
+        return
+
+    remove_local_file(name_file)
 
 
 if __name__ == '__main__':
