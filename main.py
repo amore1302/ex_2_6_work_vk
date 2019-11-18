@@ -46,10 +46,10 @@ def get_address_for_load_photo():
                }
     response = requests.get(host, params=payload)
     if not response.ok:
-        print("ОШИБКА Не смогли выполнить запрос get : Получите адрес для загрузки фото Все Остановили  ")
+        print("ОШИБКА Не смогли выполнить запрос get : Получите адрес для загрузки фото Все Остановили")
         return None
     if response.text.find("upload_url")  <= 0 :
-        print("ПОШИБКА олучите адрес для загрузки фото Все Остановили  не вернул правильный адрес для загрузки")
+        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
         return None
     return response.json()["response"]["upload_url"]
 
@@ -62,7 +62,7 @@ def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xk
         }
         response = requests.post(url, files=files)
         if not response.ok:
-            print("ОШИБКА Не смогли выгрузить фото на сервер Vk   Все Остановили  ")
+            print("ОШИБКА Не смогли выгрузить фото на сервер Vk   Все Остановили")
             return None
 
     vk_answer = response.json()
@@ -81,11 +81,11 @@ def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xk
                }
     response = requests.post(host, params=payload)
     if not response.ok:
-        print("ОШИБКА Не смогли выполнить post запрос для Загрузка фотографий на стену Vk.   Все Остановили  ")
+        print("ОШИБКА Не смогли выполнить post запрос для Загрузка фотографий на стену Vk.   Все Остановили")
         return None
 
     if response.text.find("response")  <= 0 :
-        print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили  ")
+        print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
         return None
 
 
@@ -104,7 +104,7 @@ def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xk
                }
     response = requests.get(host, params=payload)
     if not response.ok:
-        print("ОШИБКА Не смогли выложить пост  на стену Vk.   Все Остановили  ")
+        print("ОШИБКА Не смогли выложить пост  на стену Vk.   Все Остановили")
         return None
 
     return "Ok"
