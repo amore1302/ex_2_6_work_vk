@@ -46,19 +46,10 @@ def get_address_for_load_photo():
                }
     response = requests.get(host, params=payload)
     if response.text.find("upload_url")  <= 0 :
-        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
         return None
     return response.json()["response"]["upload_url"]
 
-
-def load__photo_to_server_vk( name_file, comment_xkcd):
-
-    https_address_for_load_photo = get_address_for_load_photo()
-    if https_address_for_load_photo == None:
-        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
-        return None
-
-    
+def    post__photo_to_server_vk( https_address_for_load_photo, name_file):
     with open(name_file, 'rb') as file:
         url = https_address_for_load_photo
         files = {
@@ -67,10 +58,21 @@ def load__photo_to_server_vk( name_file, comment_xkcd):
         response = requests.post(url, files=files)
 
     if response.text.find("photo")  <= 0 :
+        return None
+    return response.json()
+
+
+def load__photo_to_server_vk( name_file, comment_xkcd):
+    https_address_for_load_photo = get_address_for_load_photo()
+    if https_address_for_load_photo == None:
+        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
+        return None
+
+    vk_answer = post__photo_to_server_vk( https_address_for_load_photo, name_file)
+    if vk_answer == None:
         print("ОШИБКА Vk не смог выгрузить картинку на сервер Vk Остановили")
         return None
 
-    vk_answer = response.json()
     vk_server = vk_answer["server"]
     vk_photo  = vk_answer["photo"]
     vk_hash   = vk_answer["hash"]
