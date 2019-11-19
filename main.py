@@ -49,7 +49,7 @@ def get_address_for_load_photo():
         return None
     return response.json()["response"]["upload_url"]
 
-def    post__photo_to_server_vk( https_address_for_load_photo, name_file):
+def  photo_to_server_vk( https_address_for_load_photo, name_file):
     with open(name_file, 'rb') as file:
         url = https_address_for_load_photo
         files = {
@@ -61,22 +61,7 @@ def    post__photo_to_server_vk( https_address_for_load_photo, name_file):
         return None
     return response.json()
 
-
-def load__photo_to_server_vk( name_file, comment_xkcd):
-    https_address_for_load_photo = get_address_for_load_photo()
-    if https_address_for_load_photo == None:
-        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
-        return None
-
-    vk_answer = post__photo_to_server_vk( https_address_for_load_photo, name_file)
-    if vk_answer == None:
-        print("ОШИБКА Vk не смог выгрузить картинку на сервер Vk Остановили")
-        return None
-
-    vk_server = vk_answer["server"]
-    vk_photo  = vk_answer["photo"]
-    vk_hash   = vk_answer["hash"]
-
+def    photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd):
     host = "https://api.vk.com/method/photos.saveWallPhoto"
     payload = {"access_token": access_token,
                "group_id": group_id,
@@ -89,11 +74,32 @@ def load__photo_to_server_vk( name_file, comment_xkcd):
     response = requests.post(host, params=payload)
 
     if response.text.find("response")  <= 0 :
+        return None
+    return response.json()
+
+
+def load__photo_to_server_vk( name_file, comment_xkcd):
+    https_address_for_load_photo = get_address_for_load_photo()
+    if https_address_for_load_photo == None:
+        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
+        return None
+
+    vk_answer = photo_to_server_vk( https_address_for_load_photo, name_file)
+    if vk_answer == None:
+        print("ОШИБКА Vk не смог выгрузить картинку на сервер Vk Остановили")
+        return None
+
+    vk_server = vk_answer["server"]
+    vk_photo  = vk_answer["photo"]
+    vk_hash   = vk_answer["hash"]
+
+    vk_save_wall_photo = photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd)
+    if vk_save_wall_photo == None:
         print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
         return None
 
 
-    vk_save_wall_photo = response.json()
+
     id_photo = vk_save_wall_photo["response"][0]["id"]
     id_owner = vk_save_wall_photo["response"][0]["owner_id"]
     id_attachments = "photo{0}_{1}".format(id_owner, id_photo)
