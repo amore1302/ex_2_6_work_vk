@@ -77,6 +77,17 @@ def    photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd):
         return None
     return response.json()
 
+def    photo_to_post_wall(post_owner_id, id_attachments ):
+    host = "https://api.vk.com/method/wall.post"
+    payload = {"access_token": access_token,
+               "owner_id": post_owner_id,
+               "friends_only": "0",
+               "from_group": "0",
+               "attachments": id_attachments,
+               "v": "5.103"
+               }
+    response = requests.get(host, params=payload)
+    return "Ok"
 
 def load__photo_to_server_vk( name_file, comment_xkcd):
     https_address_for_load_photo = get_address_for_load_photo()
@@ -98,22 +109,16 @@ def load__photo_to_server_vk( name_file, comment_xkcd):
         print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
         return None
 
-
-
-    id_photo = vk_save_wall_photo["response"][0]["id"]
-    id_owner = vk_save_wall_photo["response"][0]["owner_id"]
+    vk_save_wall_photo_response = vk_save_wall_photo["response"][0]
+    id_photo = vk_save_wall_photo_response["id"]
+    id_owner = vk_save_wall_photo_response["owner_id"]
     id_attachments = "photo{0}_{1}".format(id_owner, id_photo)
     post_owner_id = "-{0}".format(group_id)
-    host = "https://api.vk.com/method/wall.post"
-    payload = {"access_token": access_token,
-               "owner_id": post_owner_id,
-               "friends_only": "0",
-               "from_group": "0",
-               "attachments": id_attachments,
-               "v": "5.103"
-               }
-    response = requests.get(host, params=payload)
 
+    vk_photo_to_post_wall = photo_to_post_wall(post_owner_id, id_attachments )
+    if vk_photo_to_post_wall == None:
+        print("ОШИБКА Не смогли  hfpvtcnbnm gjcn на стенt Vk.   Все Остановили")
+        return None
     return "Ok"
 
 
