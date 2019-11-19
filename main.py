@@ -45,25 +45,26 @@ def get_address_for_load_photo():
                "v": "5.103"
                }
     response = requests.get(host, params=payload)
-    if not response.ok:
-        print("ОШИБКА Не смогли выполнить запрос get : Получите адрес для загрузки фото Все Остановили")
-        return None
     if response.text.find("upload_url")  <= 0 :
         print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
         return None
     return response.json()["response"]["upload_url"]
 
 
-def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xkcd):
+def load__photo_to_server_vk( name_file, comment_xkcd):
+
+    https_address_for_load_photo = get_address_for_load_photo()
+    if https_address_for_load_photo == None:
+        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
+        return
+
+
     with open(name_file, 'rb') as file:
         url = https_address_for_load_photo
         files = {
             'photo': file,
         }
         response = requests.post(url, files=files)
-        if not response.ok:
-            print("ОШИБКА Не смогли выгрузить фото на сервер Vk   Все Остановили")
-            return None
 
     vk_answer = response.json()
     vk_server = vk_answer["server"]
@@ -80,9 +81,6 @@ def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xk
                "v": "5.103"
                }
     response = requests.post(host, params=payload)
-    if not response.ok:
-        print("ОШИБКА Не смогли выполнить post запрос для Загрузка фотографий на стену Vk.   Все Остановили")
-        return None
 
     if response.text.find("response")  <= 0 :
         print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
@@ -103,9 +101,6 @@ def load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xk
                "v": "5.103"
                }
     response = requests.get(host, params=payload)
-    if not response.ok:
-        print("ОШИБКА Не смогли выложить пост  на стену Vk.   Все Остановили")
-        return None
 
     return "Ok"
 
@@ -128,12 +123,8 @@ def main():
     comment_xkcd = current_xkcd["comment"]
 
 
-    https_address_for_load_photo = get_address_for_load_photo()
-    if https_address_for_load_photo == None:
-        remove_local_file(name_file)
-        return
 
-    answer_load_photo = load__photo_to_server_vk(https_address_for_load_photo, name_file, comment_xkcd)
+    answer_load_photo = load__photo_to_server_vk(name_file, comment_xkcd)
     if answer_load_photo  == None:
         print("Не смогли выгрузить Комикс в VK  ")
         remove_local_file(name_file)
