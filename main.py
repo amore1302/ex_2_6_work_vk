@@ -46,10 +46,10 @@ def get_address_for_load_photo():
                }
     response = requests.get(host, params=payload)
     if response.text.find("upload_url")  <= 0 :
-        return None
+        raise requests.HTTPError("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
     return response.json()["response"]["upload_url"]
 
-def  photo_to_server_vk( https_address_for_load_photo, name_file):
+def put_photo_to_server_vk( https_address_for_load_photo, name_file):
     with open(name_file, 'rb') as file:
         url = https_address_for_load_photo
         files = {
@@ -58,10 +58,10 @@ def  photo_to_server_vk( https_address_for_load_photo, name_file):
         response = requests.post(url, files=files)
 
     if response.text.find("photo")  <= 0 :
-        return None
+        raise requests.HTTPError("ОШИБКА Vk не смог выгрузить картинку на сервер Vk Остановили")
     return response.json()
 
-def    photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd):
+def put_photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd):
     host = "https://api.vk.com/method/photos.saveWallPhoto"
     payload = {"access_token": access_token,
                "group_id": group_id,
@@ -74,10 +74,10 @@ def    photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd):
     response = requests.post(host, params=payload)
 
     if response.text.find("response")  <= 0 :
-        return None
+        raise requests.HTTPError("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
     return response.json()
 
-def    photo_to_post_wall(post_owner_id, id_attachments ):
+def put_photo_to_post_wall(post_owner_id, id_attachments ):
     host = "https://api.vk.com/method/wall.post"
     payload = {"access_token": access_token,
                "owner_id": post_owner_id,
@@ -86,28 +86,18 @@ def    photo_to_post_wall(post_owner_id, id_attachments ):
                "attachments": id_attachments,
                "v": "5.103"
                }
-    response = requests.get(host, params=payload)
-    return "Ok"
+    requests.get(host, params=payload)
 
-def load__photo_to_server_vk( name_file, comment_xkcd):
+def load_photo_to_server_vk(name_file, comment_xkcd):
     https_address_for_load_photo = get_address_for_load_photo()
-    if https_address_for_load_photo == None:
-        print("ОШИБКА Vk не вернул правильный адрес для загрузки фото Все Остановили")
-        return None
 
-    vk_answer = photo_to_server_vk( https_address_for_load_photo, name_file)
-    if vk_answer == None:
-        print("ОШИБКА Vk не смог выгрузить картинку на сервер Vk Остановили")
-        return None
+    vk_answer = put_photo_to_server_vk( https_address_for_load_photo, name_file)
 
     vk_server = vk_answer["server"]
-    vk_photo  = vk_answer["photo"]
-    vk_hash   = vk_answer["hash"]
+    vk_photo = vk_answer["photo"]
+    vk_hash = vk_answer["hash"]
 
-    vk_save_wall_photo = photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd)
-    if vk_save_wall_photo == None:
-        print("ОШИБКА Не смогли  Загрузить файл-картинку на стену Vk.   Все Остановили")
-        return None
+    vk_save_wall_photo = put_photo_to_wall(vk_server, vk_photo, vk_hash, comment_xkcd)
 
     vk_save_wall_photo_response = vk_save_wall_photo["response"][0]
     id_photo = vk_save_wall_photo_response["id"]
@@ -115,11 +105,7 @@ def load__photo_to_server_vk( name_file, comment_xkcd):
     id_attachments = "photo{0}_{1}".format(id_owner, id_photo)
     post_owner_id = "-{0}".format(group_id)
 
-    vk_photo_to_post_wall = photo_to_post_wall(post_owner_id, id_attachments )
-    if vk_photo_to_post_wall == None:
-        print("ОШИБКА Не смогли  hfpvtcnbnm gjcn на стенt Vk.   Все Остановили")
-        return None
-    return "Ok"
+    put_photo_to_post_wall(post_owner_id, id_attachments )
 
 
 def main():
@@ -139,15 +125,12 @@ def main():
     name_file = current_xkcd["name"]
     comment_xkcd = current_xkcd["comment"]
 
-
-
-    answer_load_photo = load__photo_to_server_vk(name_file, comment_xkcd)
-    if answer_load_photo  == None:
-        print("Не смогли выгрузить Комикс в VK  ")
+    try:
+        load_photo_to_server_vk(name_file, comment_xkcd)
+    except requests.HTTPError as error:
+        exit("ОШИБКА {0}".format(error))
+    finally:
         remove_local_file(name_file)
-        return
-
-    remove_local_file(name_file)
 
 
 if __name__ == '__main__':
